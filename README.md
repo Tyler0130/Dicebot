@@ -1,5 +1,4 @@
-Dice Bot
-======
+# Dice Bot
 Do you play Dungeons & Dragons, or other table top games that require dice?
 Well, this discord bot may just be what you're looking for.
 
