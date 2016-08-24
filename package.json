@@ -1,0 +1,22 @@
+{
+  "name": "dicebot",
+  "version": "1.0.0",
+  "description": "Dice rolling bot",
+  "main": "dicebot.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/YorkAARGH/dicebot.git"
+  },
+  "bugs": {
+    "url": "https://github.com/YorkAARGH/dicebot/issues"
+  },
+  "scripts": {
+    "start": "pm2 start dicebot.js"
+  },
+  "author": "YorkAARGH",
+  "license": "ISC",
+  "dependencies": {
+    "discord.js": "^8.1.0",
+    "winston": "^2.2.0"
+  }
+}
