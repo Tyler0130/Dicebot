@@ -10,7 +10,7 @@ var voice = false;
 var hours = new Date().getHours();
 var minutes = new Date().getMinutes();
 var log = (msg) => {
-    bot.sendMessage(settings.channelid, msg);
+    bot.channels.get(settings.channelid).sendMessage(msg);
 };
 
 const winston = require('winston');
@@ -62,17 +62,23 @@ bot.on("ready", () => {
         'BOOT TIME STATISTICS',
         `• Time     : ${hours}:${minutes}`,
         `• Users    : ${bot.users.length}`,
-        `• Servers  : ${bot.servers.length}`,
+        `• Servers  : ${bot.guilds.length}`,
         `• Channels : ${bot.channels.length}`,
         '```'
     ];
+    //TODO Message array handling
     log(bootup);
-    bot.setPlayingGame("with dice");
+    bot.user.setStatus("online", "with dice");
 });
 
 bot.on('message', msg => {
-    var params = msg.content.split(" ").slice(1);
+    if (msg.author.equals(bot.user)) {
+        Stats.Messages.Sent++
+    } else {
+        Stats.Messages.Received++;
+    }
     var prefix = settings.prefix;
+    var params = msg.content.split(" ").slice(1);
     var lmsg = msg.content.toLowerCase();
     var commands = [
         '```',
@@ -94,12 +100,6 @@ bot.on('message', msg => {
         '```'
     ];
 
-    if (msg.author.equals(bot.user)) {
-        Stats.Messages.Sent++
-    } else {
-        Stats.Messages.Received++;
-    }
-
     // Ignore messages if they don't start with the prefix.
     if (!lmsg.startsWith(prefix)) {
         return;
@@ -111,18 +111,20 @@ bot.on('message', msg => {
     } else
 
     // If the bot is PM'ed reply with the commands
+    //TODO Message array handling
     if (msg.channel.isPrivate) {
-        bot.sendMessage(msg, commands);
+        msg.channel.sendMessage(commands); // Awaiting Message Array Handling
     } else
 
     // If the user issues help or commands, display the commands
+    //TODO Message array handling
     if (lmsg.startsWith(prefix + "help") || lmsg.startsWith(prefix + "commands")) {
-        bot.sendMessage(msg, commands);
+        msg.channel.sendMessage(commands);
     } else
 
     // Typical ping/pong server response.
     if (lmsg.startsWith(prefix + "ping")) {
-        bot.sendMessage(msg, `Pong! \`${Date.now() - msg.timestamp} ms\``);
+        msg.channel.sendMessage(`Pong! \`${Date.now() - msg.timestamp} ms\``);
     } else
 
     // Doing (prefix)roll without any arguments will roll a single default die of 6 sides,
@@ -131,7 +133,7 @@ bot.on('message', msg => {
     if (lmsg.startsWith(prefix + "roll")) {
         let name = params[0];
         if (!name) {
-            bot.sendMessage(msg, msg.author + " rolled a " + Math.floor(Math.random() * settings.defaultdie + 1), {
+            msg.channel.sendMessage(msg.author + " rolled a " + Math.floor(Math.random() * settings.defaultdie + 1), {
                 tts: voice
             });
         } else {
@@ -141,7 +143,7 @@ bot.on('message', msg => {
             for (var i = 0; i < dice; i++) {
                 output.push(Math.floor(Math.random() * face + 1));
             }
-            bot.sendMessage(msg, msg.author + " rolled a " + output, {
+            msg.channel.sendMessage(msg.author + " rolled a " + output, {
                 tts: voice
             });
         }
@@ -155,35 +157,36 @@ bot.on('message', msg => {
         } else {
             if (voice === true) {
                 voice = false;
-                bot.sendMessage(msg, "Voice disabled.");
+                msg.channel.sendMessage("Voice disabled.");
             } else {
                 voice = true;
-                bot.sendMessage(msg, "Voice enabled.", {
+                msg.channel.sendMessage("Voice enabled.", {
                     tts: voice
                 });
             }
         }
     }
 
-    if (lmsg.startsWith(prefix + "info")) { // Stats code given to me by datitisev from the DiscordAPI server.
-        if (msg.author.id != settings.owner) {
-            return;
-        } else {
-            let MemoryUsing = bytesToSize(process.memoryUsage().rss, 3)
-            let Uptime = GetUptime();
-
-            let message = [
-                '```xl',
-                'STATISTICS',
-                `• Memory Usage : ${MemoryUsing}`,
-                `• Uptime: ${Uptime}`,
-                `• Messages Sent: ${Stats.Messages.Sent}`,
-                `• Messages Received: ${Stats.Messages.Received}`,
-                '```',
-            ];
-            bot.sendMessage(msg, message);
-        }
-    } else
+    //TODO Message array handling
+    // if (lmsg.startsWith(prefix + "info")) {
+    //     if (msg.author.id != settings.owner) {
+    //         return;
+    //     } else {
+    //         let MemoryUsing = bytesToSize(process.memoryUsage().rss, 3)
+    //         let Uptime = GetUptime();
+    //
+    //         let message = [
+    //             '```xl',
+    //             'STATISTICS',
+    //             `• Memory Usage : ${MemoryUsing}`,
+    //             `• Uptime: ${Uptime}`,
+    //             `• Messages Sent: ${Stats.Messages.Sent}`,
+    //             `• Messages Received: ${Stats.Messages.Received}`,
+    //             '```',
+    //         ];
+    //         msg.channel.sendMessage(message);
+    //     }
+    // } else
 
     // This is the "reboot" command, without any auto starting modules (pm2 and forever for example)
     // will just terminate the process and require a manual start. But when used in conjuntion with
@@ -192,25 +195,26 @@ bot.on('message', msg => {
     // Once you've started the reboot command, when promted "Are you sure?" if you respond with anything
     // other than "yes" or "y" the reboot sequence will be aborted.
 
-    if (lmsg.startsWith(prefix + "reboot")) {
-        if (msg.author.id != settings.owner) {
-            return;
-        } else {
-            // Prompting the user for a response.
-            bot.awaitResponse(msg, "Are you sure?")
-                .then(nextMessage => {
-                    // Expecting 'yes' or 'y' as short hand.
-                    if (nextMessage.content.toLowerCase() === "yes" || nextMessage.content.toLowerCase() === "y") {
-                        bot.sendMessage(settings.channelid, "Rebooting...").then(() => {
-                            process.exit();
-                        });
-                    } else {
-                        // If it gets anything else other than 'yes/y' will abort the reboot.
-                        bot.sendMessage(msg, "Reboot aborted.");
-                    }
-                });
-        }
-    } else
+    //TODO awaitResponse
+    // if (lmsg.startsWith(prefix + "reboot")) {
+    //     if (msg.author.id != settings.owner) {
+    //         return;
+    //     } else {
+    //         // Prompting the user for a response.
+    //         bot.awaitResponse(msg, "Are you sure?")
+    //             .then(nextMessage => {
+    //                 // Expecting 'yes' or 'y' as short hand.
+    //                 if (nextMessage.content.toLowerCase() === "yes" || nextMessage.content.toLowerCase() === "y") {
+    //                     bot.sendMessage(settings.channelid, "Rebooting...").then(() => {
+    //                         process.exit();
+    //                     });
+    //                 } else {
+    //                     // If it gets anything else other than 'yes/y' will abort the reboot.
+    //                     msg.channel.sendMessage("Reboot aborted.");
+    //                 }
+    //             });
+    //     }
+    // }
 });
 
 // Catch discord.js errors
@@ -224,4 +228,4 @@ bot.on('debug', e => {
     winston.info(e);
 });
 
-bot.loginWithToken(settings.token);
+bot.login(settings.token);
