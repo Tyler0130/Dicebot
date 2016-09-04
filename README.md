@@ -10,7 +10,7 @@ sided die, all of this is configurable inside the _settings.json_ file.
 
 It even comes with a TTS toggle, which means you can enable voice output for
 all of your dice rolls so those who are away from the computer getting a drink
-can still follow alone with who rolled what die.
+can still follow along with who rolled what die.
 
 Commands
 All of these commands are prefixed with what ever you set "prefix" to inside
